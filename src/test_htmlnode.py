@@ -1,6 +1,6 @@
 import unittest
 
-from htmlnode import HTMLNode, LeafNode
+from htmlnode import HTMLNode, LeafNode, ParentNode
 
 class testHTMLNode(unittest.TestCase):
 
@@ -73,6 +73,58 @@ class testHTMLNode(unittest.TestCase):
         # props_to_html returns a leading space for a single prop.
         node = HTMLNode("p", "content", None, {"class": "intro"})
         self.assertEqual(node.props_to_html(), " class=\"intro\"")
+
+    def test_parent_to_html_with_children(self):
+        # ParentNode renders children in order.
+        child_node = LeafNode("span", "child")
+        parent_node = ParentNode("div", [child_node])
+        self.assertEqual(parent_node.to_html(), "<div><span>child</span></div>")
+
+    def test_parent_to_html_with_grandchildren(self):
+        # ParentNode renders nested children.
+        grandchild_node = LeafNode("b", "grandchild")
+        child_node = ParentNode("span", [grandchild_node])
+        parent_node = ParentNode("div", [child_node])
+        self.assertEqual(
+            parent_node.to_html(),
+            "<div><span><b>grandchild</b></span></div>",
+        )
+
+    def test_parent_requires_children(self):
+        # ParentNode rejects empty children.
+        with self.assertRaises(ValueError):
+            ParentNode("div", [])
+
+    def test_parent_requires_tag(self):
+        # ParentNode rejects missing tag.
+        with self.assertRaises(ValueError):
+            ParentNode(None, [LeafNode("span", "child")])
+
+    def test_parent_to_html_with_props(self):
+        # ParentNode includes props in the opening tag.
+        child_node = LeafNode("span", "child")
+        parent_node = ParentNode("div", [child_node], {"class": "container"})
+        self.assertEqual(
+            parent_node.to_html(),
+            "<div class=\"container\"><span>child</span></div>",
+        )
+
+    def test_parent_to_html_multiple_children(self):
+        # ParentNode renders multiple children in sequence.
+        child_one = LeafNode("span", "first")
+        child_two = LeafNode("span", "second")
+        parent_node = ParentNode("div", [child_one, child_two])
+        self.assertEqual(
+            parent_node.to_html(),
+            "<div><span>first</span><span>second</span></div>",
+        )
+
+    def test_parent_to_html_raises_without_children(self):
+        # ParentNode.to_html rejects None children.
+        parent_node = ParentNode("div", [LeafNode("span", "child")])
+        parent_node.children = None
+        with self.assertRaises(ValueError):
+            parent_node.to_html()
 
 if __name__ == "__main__":
     unittest.main()
