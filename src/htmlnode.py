@@ -20,8 +20,8 @@ class HTMLNode:
 
 class LeafNode(HTMLNode):
     def __init__(self, tag=None, value=None, props=None):
-        if not tag or not value:
-            raise ValueError("LeafNode must have a non-empty tag and value")
+        if not value:
+            raise ValueError("LeafNode must have a non-empty value")
 
         super().__init__(tag, value, None, props)
     
