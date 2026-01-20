@@ -60,9 +60,9 @@ class testHTMLNode(unittest.TestCase):
         self.assertEqual(node.to_html(), "<a href=\"https://example.com\">Link</a>")
 
     def test_leaf_requires_value(self):
-        # LeafNode rejects empty values.
-        with self.assertRaises(ValueError):
-            LeafNode("p", "")
+        # LeafNode allows empty string values.
+        node = LeafNode("p", "")
+        self.assertEqual(node.to_html(), "<p></p>")
 
     def test_leaf_requires_value_none(self):
         # LeafNode rejects None values.

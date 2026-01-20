@@ -18,13 +18,13 @@ class HTMLNode:
 
 class LeafNode(HTMLNode):
     def __init__(self, tag=None, value=None, props=None):
-        if not value:
+        if value is None:
             raise ValueError("LeafNode must have a non-empty value")
 
         super().__init__(tag, value, None, props)
     
     def to_html(self):
-        if not self.value:
+        if self.value is None:
             raise ValueError("All leaf nodes must have a value")
         if self.tag == None:
             return self.value
