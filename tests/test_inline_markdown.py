@@ -1,5 +1,9 @@
 import unittest
-from src.inline_markdown import split_nodes_delimiter
+from src.inline_markdown import (
+    split_nodes_delimiter,
+    extract_markdown_images,
+    extract_markdown_links,
+)
 from src.textnode import TextNode, TextType
 
 
@@ -84,6 +88,68 @@ class TestInlineMarkdown(unittest.TestCase):
             TextNode("italic", TextType.ITALIC),
         ]
         self.assertEqual(new_nodes, expected)
+
+    def test_extract_markdown_images_basic(self):
+        # Basic image markdown extraction
+        text = "Here is an image ![alt text](https://example.com/image.png)"
+        self.assertEqual(
+            extract_markdown_images(text),
+            [("alt text", "https://example.com/image.png")],
+        )
+
+    def test_extract_markdown_links_basic(self):
+        # Basic link markdown extraction
+        text = "Here is a link [site](https://example.com)"
+        self.assertEqual(
+            extract_markdown_links(text),
+            [("site", "https://example.com")],
+        )
+
+    def test_extract_markdown_links_and_images_separate(self):
+        # Images and links should be extracted independently
+        text = "![logo](/img.png) and [docs](/docs)"
+        self.assertEqual(extract_markdown_images(text), [("logo", "/img.png")])
+        self.assertEqual(extract_markdown_links(text), [("docs", "/docs")])
+
+    def test_extract_markdown_images_empty_alt(self):
+        # Empty alt text is allowed for images
+        text = "![](/img.png)"
+        self.assertEqual(extract_markdown_images(text), [("", "/img.png")])
+
+    def test_extract_markdown_links_empty_text(self):
+        # Empty link text is allowed for links
+        text = "[](https://example.com)"
+        self.assertEqual(extract_markdown_links(text), [("", "https://example.com")])
+
+    def test_extract_markdown_multiple_matches(self):
+        # Multiple matches should be returned in order
+        text = "![one](a.png) then [two](b.com) and ![three](c.png)"
+        self.assertEqual(
+            extract_markdown_images(text),
+            [("one", "a.png"), ("three", "c.png")],
+        )
+        self.assertEqual(extract_markdown_links(text), [("two", "b.com")])
+
+    def test_extract_markdown_no_matches(self):
+        # No markdown patterns should return empty lists
+        text = "Just plain text without markdown."
+        self.assertEqual(extract_markdown_images(text), [])
+        self.assertEqual(extract_markdown_links(text), [])
+
+    def test_extract_markdown_links_not_images(self):
+        # Images should not be parsed as links
+        text = "![alt](image.png)"
+        self.assertEqual(extract_markdown_links(text), [])
+
+    def test_extract_markdown_no_nested_parentheses(self):
+        # Nested parentheses should not match current regex
+        text = "![alt](https://example.com/(nested))"
+        self.assertEqual(extract_markdown_images(text), [])
+
+    def test_extract_markdown_adjacent_text(self):
+        # Link parsing should work when adjacent to other text
+        text = "before[link](url)after"
+        self.assertEqual(extract_markdown_links(text), [("link", "url")])
 
 
 if __name__ == "__main__":
