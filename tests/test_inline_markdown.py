@@ -5,6 +5,7 @@ from src.inline_markdown import (
     split_nodes_link,
     extract_markdown_images,
     extract_markdown_links,
+    text_to_textnode,
 )
 from src.textnode import TextNode, TextType
 
@@ -155,20 +156,20 @@ class TestInlineMarkdown(unittest.TestCase):
 
     def test_split_images(self):
         node = TextNode(
-        "This is text with an ![image](https://i.imgur.com/zjjcJKZ.png) and another ![second image](https://i.imgur.com/3elNhQu.png)",
-        TextType.TEXT,
+            "This is text with an ![image](https://i.imgur.com/zjjcJKZ.png) and another ![second image](https://i.imgur.com/3elNhQu.png)",
+            TextType.TEXT,
         )
         new_nodes = split_nodes_image([node])
         self.assertListEqual(
-        [
-            TextNode("This is text with an ", TextType.TEXT),
-            TextNode("image", TextType.IMAGE, "https://i.imgur.com/zjjcJKZ.png"),
-            TextNode(" and another ", TextType.TEXT),
-            TextNode(
-                "second image", TextType.IMAGE, "https://i.imgur.com/3elNhQu.png"
-            ),
-        ],
-        new_nodes,
+            [
+                TextNode("This is text with an ", TextType.TEXT),
+                TextNode("image", TextType.IMAGE, "https://i.imgur.com/zjjcJKZ.png"),
+                TextNode(" and another ", TextType.TEXT),
+                TextNode(
+                    "second image", TextType.IMAGE, "https://i.imgur.com/3elNhQu.png"
+                ),
+            ],
+            new_nodes,
         )
 
     def test_split_nodes_image_no_match_single_node(self):
@@ -216,6 +217,58 @@ class TestInlineMarkdown(unittest.TestCase):
             TextNode("alt", TextType.IMAGE, "img.png"),
         ]
         self.assertEqual(split_nodes_image(nodes), expected)
+
+    def test_text_to_textnode_plain_text(self):
+        # Plain text should return a single TEXT node
+        text = "Just plain text"
+        expected = [TextNode("Just plain text", TextType.TEXT)]
+        self.assertEqual(text_to_textnode(text), expected)
+
+    def test_text_to_textnode_bold_italic_code(self):
+        # Mixed inline styles should split into correct node types
+        text = "This is **bold** and *italic* with `code`"
+        expected = [
+            TextNode("This is ", TextType.TEXT),
+            TextNode("bold", TextType.BOLD),
+            TextNode(" and ", TextType.TEXT),
+            TextNode("italic", TextType.ITALIC),
+            TextNode(" with ", TextType.TEXT),
+            TextNode("code", TextType.CODE),
+        ]
+        self.assertEqual(text_to_textnode(text), expected)
+
+    def test_text_to_textnode_links_and_images(self):
+        # Images and links should be parsed into distinct nodes
+        text = "See ![logo](logo.png) and [docs](https://docs)"
+        expected = [
+            TextNode("See ", TextType.TEXT),
+            TextNode("logo", TextType.IMAGE, "logo.png"),
+            TextNode(" and ", TextType.TEXT),
+            TextNode("docs", TextType.LINK, "https://docs"),
+        ]
+        self.assertEqual(text_to_textnode(text), expected)
+
+    def test_text_to_textnode_multiple_images_and_links(self):
+        # Multiple inline elements should preserve order and spacing
+        text = "![a](1.png) [b](2) ![c](3.png)"
+        expected = [
+            TextNode("a", TextType.IMAGE, "1.png"),
+            TextNode(" ", TextType.TEXT),
+            TextNode("b", TextType.LINK, "2"),
+            TextNode(" ", TextType.TEXT),
+            TextNode("c", TextType.IMAGE, "3.png"),
+        ]
+        self.assertEqual(text_to_textnode(text), expected)
+
+    def test_text_to_textnode_unclosed_delimiter_raises(self):
+        # Unclosed delimiters should raise to flag malformed inline markdown
+        with self.assertRaises(ValueError):
+            text_to_textnode("This has **bold")
+
+    def test_text_to_textnode_returns_list(self):
+        # Function should return a list of TextNode instances
+        result = text_to_textnode("Text")
+        self.assertIsInstance(result, list)
 
 
 if __name__ == "__main__":
