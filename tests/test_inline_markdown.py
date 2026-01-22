@@ -1,6 +1,8 @@
 import unittest
 from src.inline_markdown import (
     split_nodes_delimiter,
+    split_nodes_image,
+    split_nodes_link,
     extract_markdown_images,
     extract_markdown_links,
 )
@@ -150,6 +152,70 @@ class TestInlineMarkdown(unittest.TestCase):
         # Link parsing should work when adjacent to other text
         text = "before[link](url)after"
         self.assertEqual(extract_markdown_links(text), [("link", "url")])
+
+    def test_split_images(self):
+        node = TextNode(
+        "This is text with an ![image](https://i.imgur.com/zjjcJKZ.png) and another ![second image](https://i.imgur.com/3elNhQu.png)",
+        TextType.TEXT,
+        )
+        new_nodes = split_nodes_image([node])
+        self.assertListEqual(
+        [
+            TextNode("This is text with an ", TextType.TEXT),
+            TextNode("image", TextType.IMAGE, "https://i.imgur.com/zjjcJKZ.png"),
+            TextNode(" and another ", TextType.TEXT),
+            TextNode(
+                "second image", TextType.IMAGE, "https://i.imgur.com/3elNhQu.png"
+            ),
+        ],
+        new_nodes,
+        )
+
+    def test_split_nodes_image_no_match_single_node(self):
+        # No images should return original node once
+        node = TextNode("no images here", TextType.TEXT)
+        self.assertEqual(split_nodes_image([node]), [node])
+
+    def test_split_nodes_link_no_match_single_node(self):
+        # No links should return original node once
+        node = TextNode("no links here", TextType.TEXT)
+        self.assertEqual(split_nodes_link([node]), [node])
+
+    def test_split_nodes_image_multiple(self):
+        # Multiple images should split into alternating nodes
+        node = TextNode("a ![one](1.png) b ![two](2.png) c", TextType.TEXT)
+        expected = [
+            TextNode("a ", TextType.TEXT),
+            TextNode("one", TextType.IMAGE, "1.png"),
+            TextNode(" b ", TextType.TEXT),
+            TextNode("two", TextType.IMAGE, "2.png"),
+            TextNode(" c", TextType.TEXT),
+        ]
+        self.assertEqual(split_nodes_image([node]), expected)
+
+    def test_split_nodes_link_multiple(self):
+        # Multiple links should split into alternating nodes
+        node = TextNode("a [one](1) b [two](2) c", TextType.TEXT)
+        expected = [
+            TextNode("a ", TextType.TEXT),
+            TextNode("one", TextType.LINK, "1"),
+            TextNode(" b ", TextType.TEXT),
+            TextNode("two", TextType.LINK, "2"),
+            TextNode(" c", TextType.TEXT),
+        ]
+        self.assertEqual(split_nodes_link([node]), expected)
+
+    def test_split_nodes_image_preserves_non_text_nodes(self):
+        # Non-text nodes should pass through unchanged
+        nodes = [
+            TextNode("bold", TextType.BOLD),
+            TextNode("![alt](img.png)", TextType.TEXT),
+        ]
+        expected = [
+            TextNode("bold", TextType.BOLD),
+            TextNode("alt", TextType.IMAGE, "img.png"),
+        ]
+        self.assertEqual(split_nodes_image(nodes), expected)
 
 
 if __name__ == "__main__":
