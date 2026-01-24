@@ -1,4 +1,5 @@
 from enum import Enum
+from src.htmlnode import HTMLNode
 
 class BlockType(Enum):
     PARAGRAPH = "paragraph"
@@ -43,3 +44,32 @@ def block_to_block_type(block):
         return BlockType.ORDERED_LIST
     return BlockType.PARAGRAPH
 
+def markdown_to_html_node(markdown):
+    blocks = markdown_to_blocks(markdown)
+    children = []
+    for block in blocks:
+        html_node = block_to_html_node(block)
+
+def block_to_html_code(block):
+    pass
+
+def text_to_children(text):
+    pass
+
+def paragraph_to_html_node(block):
+    pass
+
+def heading_to_html_node(block):
+    pass
+
+def code_to_html_node(block):
+    pass
+
+def ol_to_html_node(block):
+    pass
+
+def ul_to_html_node(block):
+    pass
+
+def quote_to_html_node(block):
+    pass
