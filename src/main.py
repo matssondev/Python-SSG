@@ -1,5 +1,6 @@
 import os
 import shutil
+import sys
 
 from src.markdown_html import markdown_to_html_node
 
@@ -19,17 +20,19 @@ def extract_title(markdown):
     raise Exception("No h1 header found")
 
 
-def generate_page(from_path, template_path, dest_path):
+def generate_page(from_path, template_path, dest_path, basepath):
     if os.path.isdir(from_path):
         for entry in os.listdir(from_path):
             entry_path = os.path.join(from_path, entry)
             if os.path.isdir(entry_path):
-                generate_page(entry_path, template_path, os.path.join(dest_path, entry))
+                generate_page(
+                    entry_path, template_path, os.path.join(dest_path, entry), basepath
+                )
                 continue
             if not entry.endswith(".md"):
                 continue
             dest_file = os.path.join(dest_path, f"{os.path.splitext(entry)[0]}.html")
-            generate_page(entry_path, template_path, dest_file)
+            generate_page(entry_path, template_path, dest_file, basepath)
         return
 
     if not from_path.endswith(".md"):
@@ -44,6 +47,9 @@ def generate_page(from_path, template_path, dest_path):
     html = markdown_to_html_node(markdown).to_html()
     title = extract_title(markdown)
     page = template.replace("{{ Title }}", title).replace("{{ Content }}", html)
+    page = page.replace('href="/', f'href="{basepath}').replace(
+        'src="/', f'src="{basepath}'
+    )
 
     dest_dir = os.path.dirname(dest_path)
     if dest_dir:
@@ -54,7 +60,8 @@ def generate_page(from_path, template_path, dest_path):
 
 def main():
     src = "./static"
-    dest = "./public"
+    dest = "./docs"
+    basepath = sys.argv[1] if len(sys.argv) > 1 else "/"
 
     print("Deleting public directory...")
     if os.path.exists(dest):
@@ -62,7 +69,7 @@ def main():
 
     print("Copying static files to public directory...")
     copy_directory(src, dest)
-    generate_page("./content", "./template.html", "./public")
+    generate_page("./content", "./template.html", "./docs", basepath)
 
 
 if __name__ == "__main__":
